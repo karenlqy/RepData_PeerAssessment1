@@ -23,6 +23,7 @@ head(steps_summary,10)
 
 The following histogram plots the total steps per day:
 ```{r plot1,echo=TRUE}
+png("plot1.png", width=480, height=480)
 ggplot(steps_summary)+
   aes(x=total_steps,y=..count../sum(..count..))+
   geom_histogram(binwidth = 500,na.rm=TRUE)+
@@ -30,6 +31,7 @@ ggplot(steps_summary)+
   geom_vline(aes(xintercept=mean(total_steps, na.rm=T)),   
                color="red", linetype="dashed", size=1)+
   geom_vline(aes(xintercept = median(total_steps,na.rm=T)),color="blue",linetype="dashed",size=1)
+dev.off()
 ```
 
 We can see that this person walked 0 steps in over 15% of the days we studied. On the days he/she did walked, the range of steps walked is between 2,500 to 22,500 steps. For 10% of the days, this person walked 10,000 steps. 
@@ -45,9 +47,11 @@ The average of steps per day is 9,354 steps while median is 10,400 steps. The me
 ```{r , echo=T}
 steps_by_time=activity.dt[,list(mean_steps=mean(steps,na.rm=T)),by="interval"]
 
+png("plot2.png", width=480, height=480)
 plot(steps_by_time$interval,steps_by_time$mean_steps,type="l",
      main="Daily Activity Pattern",
      ylab="Mean Steps", xlab="5 Minute Time Interval")
+dev.off()
 ```
 
 The above plot draws the daily activity pattern of this individual. We can see that the max average step in the day happens during morning before 10.
@@ -87,6 +91,7 @@ head(activity.dt.merged.summary)
 ```
 
 ```{r}
+png("plot3.png", width=480, height=480)
 ggplot(activity.dt.merged.summary)+
   aes(x=total_steps_new,y=..count../sum(..count..))+
   geom_histogram(binwidth = 500,na.rm=TRUE)+
@@ -94,6 +99,7 @@ ggplot(activity.dt.merged.summary)+
   geom_vline(aes(xintercept=mean(total_steps_new, na.rm=T)),   
                color="red", linetype="dashed", size=1)+
   geom_vline(aes(xintercept = median(total_steps_new,na.rm=T)),color="blue",linetype="dashed",size=1,show.legend =TRUE)
+dev.off()
 
 ```
 
@@ -116,5 +122,7 @@ steps_by_weekday=activity.dt.merged[,list(mean_steps_by_weekday=mean(steps_new))
 ```
 
 ```{r}
+png("plot4.png", width=480, height=480)
 xyplot(mean_steps_by_weekday~interval|weekdaytype,data=steps_by_weekday,type="l",ylab="Average Steps",xlab="5 Min Time Interval",layout=c(1,2))
+dev.off()
 ```
