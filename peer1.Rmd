@@ -1,0 +1,120 @@
+---
+title: "Peer Assessment 1: Activity Monitoring Data"
+output: html_document
+---
+```{r packages,echo=FALSE}
+library(data.table)
+library(ggplot2)
+library(lattice)
+```    
+```{r setup, echo=TRUE}
+activity <- read.csv("activity.csv",na.strings = "NA",header=T)
+```
+
+## Mean total number of steps by day
+
+First, we aggregate the steps made by day:
+```{r summary, echo=TRUE}
+activity.dt=data.table(activity)
+steps_summary=activity.dt[,list(total_steps = sum(steps,na.rm=T)),by="date"]
+head(steps_summary,10)
+```
+
+
+The following histogram plots the total steps per day:
+```{r plot1,echo=TRUE}
+ggplot(steps_summary)+
+  aes(x=total_steps,y=..count../sum(..count..))+
+  geom_histogram(binwidth = 500,na.rm=TRUE)+
+  labs(y="Percent",x="Total Steps per Day")+
+  geom_vline(aes(xintercept=mean(total_steps, na.rm=T)),   
+               color="red", linetype="dashed", size=1)+
+  geom_vline(aes(xintercept = median(total_steps,na.rm=T)),color="blue",linetype="dashed",size=1)
+```
+
+We can see that this person walked 0 steps in over 15% of the days we studied. On the days he/she did walked, the range of steps walked is between 2,500 to 22,500 steps. For 10% of the days, this person walked 10,000 steps. 
+
+```{r descriptives, echo=T}
+summary(steps_summary$total_steps)
+```
+
+The average of steps per day is 9,354 steps while median is 10,400 steps. The mean and median are also plotted in the histogram with red line as the mean while blue line as the median.
+
+## Average daily activity pattern
+
+```{r , echo=T}
+steps_by_time=activity.dt[,list(mean_steps=mean(steps,na.rm=T)),by="interval"]
+
+plot(steps_by_time$interval,steps_by_time$mean_steps,type="l",
+     main="Daily Activity Pattern",
+     ylab="Mean Steps", xlab="5 Minute Time Interval")
+```
+
+The above plot draws the daily activity pattern of this individual. We can see that the max average step in the day happens during morning before 10.
+
+```{r, echo=T}
+steps_by_time[which.max(steps_by_time$mean_steps),]
+```
+
+From the above result, we can see that 8:35 is the time of the day this individual walks the most in the two month study period.
+
+## Imputing missing values
+
+```{r}
+length(which(is.na(activity.dt$steps)==TRUE))
+```
+
+There are 2304 missing values in steps variable. Since during analysis, missing values are usually ignored. This would introduce bias to some of the calculations later on. Therefore, imputation is way to eliminate such bias. Since we already calculated the average step per time inverval, we can impute the missing value with the average step at the same time interval.
+
+```{r impute}
+setkey(steps_by_time,interval)
+setkey(activity.dt,interval)
+activity.dt.merged=merge(activity.dt,steps_by_time,by="interval")
+NA_replace <- function(x,y){
+  if(is.na(x)==TRUE){
+    return(y)
+  }
+  return(x)
+}
+```
+
+```{r}
+activity.dt.merged$steps_new=mapply(NA_replace,activity.dt.merged$steps,activity.dt.merged$mean_steps)
+
+activity.dt.merged.summary=activity.dt.merged[,list(total_steps_new=
+                           sum(steps_new)),by="interval"]
+head(activity.dt.merged.summary)
+```
+
+```{r}
+ggplot(activity.dt.merged.summary)+
+  aes(x=total_steps_new,y=..count../sum(..count..))+
+  geom_histogram(binwidth = 500,na.rm=TRUE)+
+  labs(y="Percent",x="Total Steps per Day")+
+  geom_vline(aes(xintercept=mean(total_steps_new, na.rm=T)),   
+               color="red", linetype="dashed", size=1)+
+  geom_vline(aes(xintercept = median(total_steps_new,na.rm=T)),color="blue",linetype="dashed",size=1,show.legend =TRUE)
+
+```
+
+After imputing the missing values, we can see that the distribution of total steps per day shift left and the mean and median are closer than previous plot.
+
+```{r}
+weekday<-function(x){
+  if (x %in%  c("Saturday","Sunday")) {
+    return("Weekend")
+  }
+  return("Weekday")
+}
+```
+
+
+```{r}
+activity.dt.merged$weekday=weekdays(as.Date(activity.dt.merged$date))
+activity.dt.merged$weekdaytype=as.factor(apply(as.matrix(activity.dt.merged$weekday),1,weekday))
+steps_by_weekday=activity.dt.merged[,list(mean_steps_by_weekday=mean(steps_new)),by=list(interval,weekdaytype)]
+```
+
+```{r}
+xyplot(mean_steps_by_weekday~interval|weekdaytype,data=steps_by_weekday,type="l",ylab="Average Steps",xlab="5 Min Time Interval",layout=c(1,2))
+```
